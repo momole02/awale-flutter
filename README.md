@@ -7,3 +7,5 @@ N'hésitez à cloner le projet, puis lancer le jeu avec la commande:
 ```
 flutter run
 ```
+
+![Snapshot](docs/images/snapshot.png)
