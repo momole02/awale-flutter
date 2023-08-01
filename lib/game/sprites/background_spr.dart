@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flame/components.dart';
-import 'package:flame/extensions.dart';
 
 class BackgroundSprite extends SpriteComponent {
   BackgroundSprite({Vector2? size}) : super(size: size);
