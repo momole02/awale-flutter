@@ -4,9 +4,13 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:awale_flutter/game/circles/circles_model.dart';
+import 'package:awale_flutter/game/gameplay/action_pattern.dart';
+import 'package:awale_flutter/game/gameplay/actions/player_move_action.dart';
+import 'package:awale_flutter/game/gameplay/actions/sprite_move_action.dart';
 import 'package:awale_flutter/game/sprites/background_spr.dart';
 import 'package:awale_flutter/game/sprites/bean_spr.dart';
 import 'package:awale_flutter/game/sprites/paddle_spr.dart';
+import 'package:flame/events.dart';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -15,12 +19,14 @@ import 'package:flutter/services.dart';
 const int circlesPerPlayer = 7;
 const double circleDeltaY = 10;
 
-class AwaleGame extends FlameGame {
+class AwaleGame extends FlameGame with TapDetector {
   List<Aabb2> p1Circles = [];
   List<Aabb2> p2Circles = [];
   double boardX = 0;
   double boardY = 0;
   List<BeanSprite> beans = [];
+
+  final ActionManager actionManager = ActionManager();
 
   @override
   FutureOr<void> onLoad() async {
@@ -29,30 +35,39 @@ class AwaleGame extends FlameGame {
     boardY = size.y / 4;
     await _loadCircles();
     _setupScene();
+    // actionManager.push(
+    //   PlayerMoveAction(
+    //       p1Circles: p1Circles,
+    //       p2Circles: p2Circles,
+    //       beans: beans,
+    //       playCircle: p2Circles[0]),
+    // );
   }
 
   @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    // for (var circle in p1Circles) {
-    //   canvas.drawRect(
-    //     Rect.fromPoints(Offset(circle.min.x, circle.min.y),
-    //         Offset(circle.max.x, circle.max.y)),
-    //     Paint()
-    //       ..style = PaintingStyle.stroke
-    //       ..color = Colors.white,
-    //   );
-    // }
+  void onTapDown(TapDownInfo info) {
+    if (!actionManager.isRunning()) {
+      List L = [...p1Circles, ...p2Circles];
+      int index = L.indexWhere(
+          (circle) => circle.containsVector2(info.eventPosition.global));
+      if (-1 != index) {
+        actionManager.push(
+          PlayerMoveAction(
+            p1Circles: p1Circles,
+            p2Circles: p2Circles,
+            beans: beans,
+            playCircle: L[index],
+            beanMoveDuration: 500,
+          ),
+        );
+      }
+    }
+  }
 
-    // for (var circle in p2Circles) {
-    //   canvas.drawRect(
-    //     Rect.fromPoints(Offset(circle.min.x, circle.min.y),
-    //         Offset(circle.max.x, circle.max.y)),
-    //     Paint()
-    //       ..style = PaintingStyle.stroke
-    //       ..color = Colors.white,
-    //   );
-    // }
+  @override
+  void update(double dt) {
+    super.update(dt);
+    actionManager.performStuff();
   }
 
   /// Charge les AABBs associées aux cercles
@@ -64,6 +79,8 @@ class AwaleGame extends FlameGame {
     _extractPlayer2Circles(circlesModel);
   }
 
+  /// Détermine la position des cercles du joueur 1
+  /// (ceux du haut)
   void _extractPlayer1Circles(CirclesModel circlesModel) {
     for (final [x, y, w, h] in circlesModel.player1) {
       p1Circles.add(
@@ -75,6 +92,8 @@ class AwaleGame extends FlameGame {
     }
   }
 
+  /// Détermine la position des cercles du joueur 2
+  /// (ceux du bas)
   void _extractPlayer2Circles(CirclesModel circlesModel) {
     for (final [x, y, w, h] in circlesModel.player2) {
       p2Circles.add(
@@ -86,6 +105,7 @@ class AwaleGame extends FlameGame {
     }
   }
 
+  /// Met en place la scène de jeu
   void _setupScene() {
     addAll([
       BackgroundSprite(size: Vector2(size.x, size.y)),
@@ -94,12 +114,15 @@ class AwaleGame extends FlameGame {
     _initBeansPosition();
   }
 
+  /// Initialise les positions des graines
+  /// 4 par cercles
   void _initBeansPosition() {
     beans = List.generate(2 * 4 * circlesPerPlayer,
         (index) => BeanSprite(position: _beanPosition(index)));
     addAll(beans);
   }
 
+  /// Calcul une position aléatoire au sein d'un cercle
   Vector2 _randomPositionInCircle(Aabb2 circle) {
     final rnd = Random();
     double xMax = (1 + circle.max.x - circle.min.x) - beanSize;
@@ -113,13 +136,15 @@ class AwaleGame extends FlameGame {
     );
   }
 
+  /// Détermine la position d'une graine au sein par
+  /// rapport au cercles
+  ///   i dans [0,4[ => position(i) dans cp1(0)
+  ///   i dans [4,8[ => position(i) dans cp1(1)
+  ///   i dans [8,12[ => position(i) dans cp1(2)
+  ///   ...
+  ///   i dans [4*circlesPerPlayer-4, 4*circlesPerPlayer[ => position(i) dans cp1(n-1)
+  ///..
   Vector2 _beanPosition(int index) {
-    //i dans [0,4[ => position(i) dans cp1(0)
-    //i dans [4,8[ => position(i) dans cp1(1)
-    //i dans [8,12[ => position(i) dans cp1(2)
-    //...
-    //i dans [4*circlesPerPlayer-4, 4*circlesPerPlayer[ => position(i) dans cp1(n-1)
-    //..
     if (index < 4 * circlesPerPlayer) {
       int circle = (index / 4).floor();
       return _randomPositionInCircle(p1Circles[circle]);
