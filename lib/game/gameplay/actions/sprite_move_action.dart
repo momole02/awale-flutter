@@ -1,6 +1,8 @@
 import 'package:awale_flutter/game/gameplay/action_pattern.dart';
 import 'package:flame/components.dart';
 
+const int moveDuration = 500;
+
 /// Implémente l'action du mouvement
 /// d'un sprite d'un point à un autre image par image.
 /// Le mouvement est rendu lisse par interpolation cubique
@@ -17,23 +19,19 @@ class SpriteMoveAction extends Action {
   /// La destination finale du sprite
   Vector2 location;
 
-  /// Durée de l'animation en millisecondes
-  int duration;
-
   SpriteMoveAction({
     required this.sprite,
     required this.location,
-    required this.duration,
   });
 
   @override
-  void onStart() {
+  void onStart(Map<String, dynamic> globals) {
     _initialPosition = sprite.position;
     _startTime = DateTime.now().millisecondsSinceEpoch;
   }
 
   @override
-  void perform(List<Action> actionQueue) {
+  void perform(List<Action> actionQueue, Map<String, dynamic> globals) {
     Vector2 v0 = _initialPosition;
     Vector2 v1 = location;
     // Calcul des coefficients vectoriels
@@ -44,10 +42,11 @@ class SpriteMoveAction extends Action {
 
     // clipping du temps sur [0,1]
     int elapsed = DateTime.now().millisecondsSinceEpoch - _startTime;
-    double t = elapsed / duration;
+    double t = elapsed / moveDuration;
 
     // calcul de la position courante
     Vector2 currentPosition = f0 * t * t + f1 * t + f2;
+    //Vector2 currentPosition = v0 * (1 - t) + v1 * t;
     sprite.position = currentPosition;
 
     // Faut faire attention à l'égalité en floating-point !

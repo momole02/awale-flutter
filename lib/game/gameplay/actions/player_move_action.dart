@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:awale_flutter/game/gameplay/action_pattern.dart';
 import 'package:awale_flutter/game/gameplay/actions/sprite_move_action.dart';
+import 'package:awale_flutter/game/gameplay/actions/symbols.dart';
 import 'package:flame/components.dart';
 
 /// Implémentation de l'action associé au jeu d'un joueur
@@ -42,7 +43,7 @@ class PlayerMoveAction extends Action {
     this.beanMoveDuration = 2000,
   });
   @override
-  void onStart() {
+  void onStart(Map<String, dynamic> globals) {
     _circular = [
       ...p2Circles,
       ...p1Circles.reversed,
@@ -58,10 +59,15 @@ class PlayerMoveAction extends Action {
 
     // ... la prochaine destination de la graine
     _nextPlayIndex = (1 + _initialPlayIndex) % _circular.length;
+
+    /// Enregistrer l'index circulaire initial
+    /// Pour le retrait des gains
+    globals[kLastPlayStartIndex] = _initialPlayIndex;
+    globals[kLastPlayCount] = _currentCircleBeans.length;
   }
 
   @override
-  void perform(List<Action> actionQueue) {
+  void perform(List<Action> actionQueue, Map<String, dynamic> globals) {
     final List<Action> beanMoves = [];
 
     /// Ajouter les actions relatives au mouvement de chaque graine
@@ -71,7 +77,6 @@ class PlayerMoveAction extends Action {
         SpriteMoveAction(
           sprite: _currentCircleBeans[i],
           location: _aabbRandomPosition(target),
-          duration: beanMoveDuration,
         ),
       );
       _nextPlayIndex = (1 + _nextPlayIndex) % _circular.length;
