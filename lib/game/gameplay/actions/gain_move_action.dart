@@ -10,7 +10,6 @@ class GainMoveAction extends Action {
   Aabb2 playerCircle;
   Aabb2 gainCircle;
   List<SpriteComponent> beans;
-  int beanMoveDuration;
 
   late List<SpriteComponent> _playerBeans;
 
@@ -18,7 +17,6 @@ class GainMoveAction extends Action {
     required this.playerCircle,
     required this.gainCircle,
     required this.beans,
-    required this.beanMoveDuration,
   });
 
   @override
