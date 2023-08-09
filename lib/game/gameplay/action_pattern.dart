@@ -12,10 +12,10 @@ abstract class Action {
 
   /// Methode appelé lors avant de démarrer l'action
   /// i.e : avant que le state passe à running
-  void onStart() {}
+  void onStart(Map<String, dynamic> globals) {}
 
   /// Effectue l'action ou une part de l'action
-  void perform(List<Action> actionQueue);
+  void perform(List<Action> actionQueue, Map<String, dynamic> globals);
 
   /// Retourne le statut "terminé" de l'action
   bool get isTerminated => state == ActionState.terminated;
@@ -31,8 +31,12 @@ class ActionManager {
   /// File d'actions
   late List<Action> queue;
 
+  /// Variables globales
+  late Map<String, dynamic> globals;
+
   ActionManager() {
     queue = [];
+    globals = {};
   }
 
   /// Effectue l'action courante
@@ -41,9 +45,9 @@ class ActionManager {
       Action top = queue[0];
       if (top.state == ActionState.idle) {
         top.state = ActionState.running;
-        top.onStart();
+        top.onStart(globals);
       }
-      top.perform(queue);
+      top.perform(queue, globals);
       if (top.isTerminated) {
         queue.removeAt(0);
       }
