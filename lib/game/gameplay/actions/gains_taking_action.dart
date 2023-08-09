@@ -17,7 +17,6 @@ class GainsTakingAction extends Action {
   Aabb2 p1aabb;
   Aabb2 p2aabb;
   List<SpriteComponent> beans;
-  int beanMoveDuration;
 
   late List<Aabb2> _circular;
   late CircularMatrix _circularMatrix;
@@ -31,7 +30,6 @@ class GainsTakingAction extends Action {
     required this.beans,
     required this.p1aabb,
     required this.p2aabb,
-    required this.beanMoveDuration,
   });
 
   @override
@@ -57,10 +55,10 @@ class GainsTakingAction extends Action {
     while (currentRow != startRow && isGaining) {
       moves.add(
         GainMoveAction(
-            playerCircle: _circular[currentIndex],
-            gainCircle: startRow == vPlayer1Row ? p1aabb : p2aabb,
-            beans: beans,
-            beanMoveDuration: beanMoveDuration),
+          playerCircle: _circular[currentIndex],
+          gainCircle: startRow == vPlayer1Row ? p1aabb : p2aabb,
+          beans: beans,
+        ),
       );
       --currentIndex;
       if (currentIndex < 0) {

@@ -71,7 +71,15 @@ class PlayerMoveAction extends Action {
     final List<Action> beanMoves = [];
 
     /// Ajouter les actions relatives au mouvement de chaque graine
-    for (int i = 0; i < _currentCircleBeans.length; ++i) {
+    for (int i = 0; i < _currentCircleBeans.length;) {
+      if (i != 0 && _initialPlayIndex == _nextPlayIndex) {
+        // si on retombe sur le même cercle
+        // à partir duquel on a déja joué
+        // on saute
+        _nextPlayIndex = (1 + _nextPlayIndex) % _circular.length;
+
+        continue;
+      }
       Aabb2 target = _circular[_nextPlayIndex];
       beanMoves.add(
         SpriteMoveAction(
@@ -80,6 +88,7 @@ class PlayerMoveAction extends Action {
         ),
       );
       _nextPlayIndex = (1 + _nextPlayIndex) % _circular.length;
+      ++i;
     }
 
     /// Planifier le mouvement des graines

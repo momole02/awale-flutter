@@ -15,6 +15,7 @@ import 'package:awale_flutter/game/sprites/bean_spr.dart';
 import 'package:awale_flutter/game/sprites/paddle_spr.dart';
 import 'package:awale_flutter/game/sprites/stump_spr.dart';
 import 'package:awale_flutter/simulator/state/game_state.dart';
+import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 
 import 'package:flame/game.dart';
@@ -32,6 +33,13 @@ const double circleDeltaY = 0;
 /// différentes souches des gains
 const double stumpOffset = 20;
 
+/// Définition des joueurs
+///
+enum Player {
+  player1,
+  player2,
+}
+
 class AwaleGame extends FlameGame with TapDetector {
   double boardX = 0;
   double boardY = 0;
@@ -41,8 +49,11 @@ class AwaleGame extends FlameGame with TapDetector {
 
   late StumpSprite p1Stump;
   late StumpSprite p2Stump;
+  late TextComponent turnTextComponent;
   late Aabb2 p1aabb;
   late Aabb2 p2aabb;
+
+  late Player currentPlayer;
 
   final ActionManager actionManager = ActionManager();
 
@@ -56,6 +67,7 @@ class AwaleGame extends FlameGame with TapDetector {
     await _loadCircles();
     _setupScene();
     _updateGameState();
+    _setPlayer1Turn();
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -63,35 +75,10 @@ class AwaleGame extends FlameGame with TapDetector {
   void onTapDown(TapDownInfo info) {
     // ... On s'assure qu'aucune autre action n'est en cours
     if (!actionManager.isRunning()) {
-      List L = [...p1Circles, ...p2Circles];
-      // .. On determine le cercle qui a été tappé
-      int index = L.indexWhere(
-          (circle) => circle.containsVector2(info.eventPosition.global));
-      if (-1 != index) {
-        actionManager
-            .push(PlayerMoveAction(
-              p1Circles: p1Circles,
-              p2Circles: p2Circles,
-              beans: beans,
-              playCircle: L[index],
-              beanMoveDuration: 1000,
-            ))
-            .push(
-              CustomCallbackAction(callback: (globals) => _updateGameState()),
-            )
-            .push(
-              GainsTakingAction(
-                  gameState: state!,
-                  p1Circles: p1Circles,
-                  p2Circles: p2Circles,
-                  beans: beans,
-                  p1aabb: p1aabb,
-                  p2aabb: p2aabb,
-                  beanMoveDuration: 1000),
-            )
-            .push(
-              CustomCallbackAction(callback: (globals) => _updateGameState()),
-            );
+      if (currentPlayer == Player.player1) {
+        _handlePlayer1Turn(info);
+      } else {
+        _handlePlayer2Turn(info);
       }
     }
   }
@@ -197,13 +184,107 @@ class AwaleGame extends FlameGame with TapDetector {
           Vector2(p2Stump.width - 1 - 2 * stumpOffset,
               p2Stump.height - 1 - 2 * stumpOffset),
     );
+    _initTurnText();
     addAll([
       BackgroundSprite(size: Vector2(size.x, size.y)),
       PaddleSprite(position: Vector2(boardX, boardY)),
       p1Stump,
       p2Stump,
+      turnTextComponent,
     ]);
     _initBeansPosition();
+  }
+
+  void _initTurnText() {
+    turnTextComponent = TextComponent(
+      anchor: Anchor.topCenter,
+      text: "A votre tour de jouer !",
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          fontSize: 35,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          backgroundColor: Color.fromARGB(255, 116, 91, 53),
+        ),
+      ),
+    )
+      ..x = size.x / 2
+      ..y = 0;
+  }
+
+  /// Passe le tour au joueur joueur 1
+  void _setPlayer1Turn() {
+    currentPlayer = Player.player1;
+    turnTextComponent.y = 0;
+  }
+
+  /// Passe le tour au joueur 2
+  void _setPlayer2Turn() {
+    currentPlayer = Player.player2;
+    turnTextComponent.y = size.y - turnTextComponent.height - 1;
+  }
+
+  void _switchPlayerTurn() {
+    if (currentPlayer == Player.player1) {
+      _setPlayer2Turn();
+    } else {
+      _setPlayer1Turn();
+    }
+  }
+
+  /// Attends le tour du joueur 1
+  void _handlePlayer1Turn(TapDownInfo info) {
+    int index = p1Circles.indexWhere(
+        (circle) => circle.containsVector2(info.eventPosition.global));
+    if (-1 != index) {
+      _play(p1Circles[index]);
+    }
+  }
+
+  /// Attends le tour du joueur 2
+  void _handlePlayer2Turn(TapDownInfo info) {
+    int index = p2Circles.indexWhere(
+        (circle) => circle.containsVector2(info.eventPosition.global));
+    if (-1 != index) {
+      _play(p2Circles[index]);
+    }
+  }
+
+  /// Effectue un jeu selon une case
+  void _play(Aabb2 playCircle) {
+    actionManager
+        .push(
+          // Effectue le jeu
+          PlayerMoveAction(
+            p1Circles: p1Circles,
+            p2Circles: p2Circles,
+            beans: beans,
+            playCircle: playCircle,
+          ),
+        )
+        .push(
+          // Calcul l'état du jeu
+          CustomCallbackAction(callback: (globals) => _updateGameState()),
+        )
+        .push(
+          // Recupère les gains
+          GainsTakingAction(
+            gameState: state!,
+            p1Circles: p1Circles,
+            p2Circles: p2Circles,
+            beans: beans,
+            p1aabb: p1aabb,
+            p2aabb: p2aabb,
+          ),
+        )
+        .push(
+          // Recalcul l'état du jeu
+          CustomCallbackAction(callback: (globals) => _updateGameState()),
+        )
+        .push(
+          // Change le tour
+          CustomCallbackAction(callback: (globals) => _switchPlayerTurn()),
+        );
   }
 
   /// Initialise les positions des graines
