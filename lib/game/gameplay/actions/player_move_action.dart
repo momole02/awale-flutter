@@ -92,7 +92,9 @@ class PlayerMoveAction extends Action {
     }
 
     /// Planifier le mouvement des graines
-    actionQueue.insertAll(1, beanMoves);
+    if (beanMoves.isNotEmpty) {
+      actionQueue.insertAll(1, beanMoves);
+    }
 
     /// Mettre fin à l'action afin de passer le relais au mouvement
     terminate();

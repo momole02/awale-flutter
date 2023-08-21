@@ -10,6 +10,7 @@ import 'package:awale_flutter/game/gameplay/actions/gains_taking_action.dart';
 import 'package:awale_flutter/game/gameplay/actions/player_move_action.dart';
 import 'package:awale_flutter/game/gameplay/actions/sprite_move_action.dart';
 import 'package:awale_flutter/game/gameplay/game_state_updater.dart';
+import 'package:awale_flutter/game/hud/player_type_hud_component.dart';
 import 'package:awale_flutter/game/sprites/background_spr.dart';
 import 'package:awale_flutter/game/sprites/bean_spr.dart';
 import 'package:awale_flutter/game/sprites/paddle_spr.dart';
@@ -40,6 +41,11 @@ enum Player {
   player2,
 }
 
+enum PlayerType {
+  ai,
+  human,
+}
+
 class AwaleGame extends FlameGame with TapDetector {
   double boardX = 0;
   double boardY = 0;
@@ -52,8 +58,12 @@ class AwaleGame extends FlameGame with TapDetector {
   late TextComponent turnTextComponent;
   late Aabb2 p1aabb;
   late Aabb2 p2aabb;
+  late PlayerTypeHudComponent player1TypeHud;
+  late PlayerTypeHudComponent player2TypeHud;
 
   late Player currentPlayer;
+  PlayerType player1Type = PlayerType.human;
+  PlayerType player2Type = PlayerType.human;
 
   final ActionManager actionManager = ActionManager();
 
@@ -68,6 +78,7 @@ class AwaleGame extends FlameGame with TapDetector {
     _setupScene();
     _updateGameState();
     _setPlayer1Turn();
+    _initPlayerTypeHuds();
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -113,18 +124,38 @@ class AwaleGame extends FlameGame with TapDetector {
     // Afficher l'état du jeu (nombre de pions, etc...)
     for (int i = 0; i < p1Circles.length; ++i) {
       int count = state!.p1pad[i];
-      beansCountTextPainter.render(canvas, "$count", p1Circles[i].min);
+      beansCountTextPainter.render(canvas, "$count", p1Circles[i].center);
     }
 
     for (int i = 0; i < p1Circles.length; ++i) {
       int count = state!.p2pad[i];
-      beansCountTextPainter.render(canvas, "$count", p2Circles[i].min);
+      beansCountTextPainter.render(canvas, "$count", p2Circles[i].center);
     }
 
     int p1Gains = state!.p1points;
     int p2Gains = state!.p2points;
     gainsTextPainter.render(canvas, "$p1Gains", p1aabb.min);
     gainsTextPainter.render(canvas, "$p2Gains", p2aabb.min);
+  }
+
+  /// Initialise les HUDs associé aux types de joueurs
+  void _initPlayerTypeHuds() {
+    player1TypeHud = PlayerTypeHudComponent(
+        position: p1Circles.first.center,
+        lineHeight: 10,
+        text: _getPlayerTypeText(player1Type),
+        orientation: PlayerTypeHudOrientation.upward);
+
+    player2TypeHud = PlayerTypeHudComponent(
+        position: p2Circles.last.center,
+        lineHeight: 10,
+        text: _getPlayerTypeText(player2Type),
+        orientation: PlayerTypeHudOrientation.downward);
+
+    addAll([
+      player1TypeHud,
+      player2TypeHud,
+    ]);
   }
 
   /// Charge les AABBs associées aux cercles
@@ -344,6 +375,15 @@ class AwaleGame extends FlameGame with TapDetector {
       state!.p2points = newState.p2points;
     } else {
       state = newState;
+    }
+  }
+
+  String _getPlayerTypeText(PlayerType type) {
+    switch (type) {
+      case PlayerType.ai:
+        return "IA";
+      case PlayerType.human:
+        return "Humain";
     }
   }
 }
