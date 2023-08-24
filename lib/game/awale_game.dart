@@ -78,7 +78,6 @@ class AwaleGame extends FlameGame with TapDetector {
     _setupScene();
     _updateGameState();
     _setPlayer1Turn();
-    _initPlayerTypeHuds();
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -141,14 +140,14 @@ class AwaleGame extends FlameGame with TapDetector {
   /// Initialise les HUDs associé aux types de joueurs
   void _initPlayerTypeHuds() {
     player1TypeHud = PlayerTypeHudComponent(
-        position: p1Circles.first.center,
-        lineHeight: 10,
+        position: p1Circles[6].min,
+        lineHeight: 50,
         text: _getPlayerTypeText(player1Type),
         orientation: PlayerTypeHudOrientation.upward);
 
     player2TypeHud = PlayerTypeHudComponent(
-        position: p2Circles.last.center,
-        lineHeight: 10,
+        position: p2Circles[3].max,
+        lineHeight: 50,
         text: _getPlayerTypeText(player2Type),
         orientation: PlayerTypeHudOrientation.downward);
 
@@ -224,6 +223,7 @@ class AwaleGame extends FlameGame with TapDetector {
       turnTextComponent,
     ]);
     _initBeansPosition();
+    _initPlayerTypeHuds();
   }
 
   void _initTurnText() {

@@ -24,24 +24,16 @@ class PlayerTypeHudComponent extends CustomPainterComponent {
   @override
   FutureOr<void> onLoad() {
     painter = PlayerTypeHudPainter(
-        startX: position.x,
-        startY: position.y,
-        lineHeight: lineHeight,
-        text: text,
-        orientation: orientation);
+        lineHeight: lineHeight, text: text, orientation: orientation);
   }
 }
 
 class PlayerTypeHudPainter extends CustomPainter {
-  double startX;
-  double startY;
   double lineHeight;
   String text;
   PlayerTypeHudOrientation orientation;
 
   PlayerTypeHudPainter({
-    required this.startX,
-    required this.startY,
     required this.lineHeight,
     required this.text,
     required this.orientation,
@@ -50,12 +42,12 @@ class PlayerTypeHudPainter extends CustomPainter {
   void _drawUpward(Canvas canvas, Size size) {
     // La ligne entre l'origine et le cadre du texte
     canvas.drawLine(
-        Offset(startX, startY),
-        Offset(startX, startY - lineHeight),
+        const Offset(0, 0),
+        Offset(0, -lineHeight),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = Colors.white);
+          ..color = Colors.grey.shade300);
 
     final textPaint = TextPaint(
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20));
@@ -63,30 +55,28 @@ class PlayerTypeHudPainter extends CustomPainter {
     // le texte
     textPainter.paint(
       canvas,
-      Offset(startX - textPainter.width / 2,
-          startY - lineHeight - textPainter.height),
+      Offset(-textPainter.width / 2, -lineHeight - textPainter.height),
     );
     // le cadre du texte
     canvas.drawRect(
         Rect.fromPoints(
-            Offset(startX - textPainter.width / 2,
-                startY - lineHeight - textPainter.height),
-            Offset(startX + textPainter.width / 2, startY - lineHeight)),
+            Offset(-textPainter.width / 2, -lineHeight - textPainter.height),
+            Offset(textPainter.width / 2, -lineHeight)),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = Colors.white);
+          ..color = Colors.grey.shade300);
   }
 
   void _drawDownward(Canvas canvas, Size size) {
     // La ligne entre l'origine et le cadre du texte
     canvas.drawLine(
-        Offset(startX, startY),
-        Offset(startX, startY + lineHeight),
+        const Offset(0, 0),
+        Offset(0, lineHeight),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = Colors.white);
+          ..color = Colors.grey.shade300);
 
     final textPaint = TextPaint(
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20));
@@ -94,19 +84,17 @@ class PlayerTypeHudPainter extends CustomPainter {
     // le texte
     textPainter.paint(
       canvas,
-      Offset(startX - textPainter.width / 2, startY + lineHeight),
+      Offset(-textPainter.width / 2, lineHeight),
     );
 
     // le cadre du texte
     canvas.drawRect(
-        Rect.fromPoints(
-            Offset(startX - textPainter.width / 2, startY + lineHeight),
-            Offset(startX + textPainter.width / 2,
-                startY + lineHeight + textPainter.height)),
+        Rect.fromPoints(Offset(-textPainter.width / 2, lineHeight),
+            Offset(textPainter.width / 2, lineHeight + textPainter.height)),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = Colors.white);
+          ..color = Colors.grey.shade300);
   }
 
   @override
