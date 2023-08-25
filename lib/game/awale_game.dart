@@ -3,48 +3,25 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:awale_flutter/game/circles/circles_model.dart';
+import 'package:awale_flutter/game/constants.dart';
 import 'package:awale_flutter/game/gameplay/action_pattern.dart';
 import 'package:awale_flutter/game/gameplay/actions/custom_callback_action.dart';
-import 'package:awale_flutter/game/gameplay/actions/gain_move_action.dart';
 import 'package:awale_flutter/game/gameplay/actions/gains_taking_action.dart';
 import 'package:awale_flutter/game/gameplay/actions/player_move_action.dart';
-import 'package:awale_flutter/game/gameplay/actions/sprite_move_action.dart';
 import 'package:awale_flutter/game/gameplay/game_state_updater.dart';
-import 'package:awale_flutter/game/hud/player_type_hud_component.dart';
 import 'package:awale_flutter/game/sprites/background_spr.dart';
 import 'package:awale_flutter/game/sprites/bean_spr.dart';
 import 'package:awale_flutter/game/sprites/paddle_spr.dart';
+import 'package:awale_flutter/game/sprites/pause_button_spr.dart';
 import 'package:awale_flutter/game/sprites/stump_spr.dart';
+import 'package:awale_flutter/game/sprites/turn_plate_spr.dart';
+import 'package:awale_flutter/game/types.dart';
 import 'package:awale_flutter/simulator/state/game_state.dart';
-import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-/// Nombre de cercles par joueur sur le plateau
-const int circlesPerPlayer = 7;
-
-/// Décalage Y utilisé pour le calcul des AABBs des
-/// cercles sur le plateau
-const double circleDeltaY = 0;
-
-/// Decalage utilisé pour calculer les AABBs des
-/// différentes souches des gains
-const double stumpOffset = 20;
-
-/// Définition des joueurs
-///
-enum Player {
-  player1,
-  player2,
-}
-
-enum PlayerType {
-  ai,
-  human,
-}
 
 class AwaleGame extends FlameGame with TapDetector {
   double boardX = 0;
@@ -55,17 +32,14 @@ class AwaleGame extends FlameGame with TapDetector {
 
   late StumpSprite p1Stump;
   late StumpSprite p2Stump;
-  late TextComponent turnTextComponent;
+  late TurnPlateSprite turnPlateSprite;
   late Aabb2 p1aabb;
   late Aabb2 p2aabb;
-  late PlayerTypeHudComponent player1TypeHud;
-  late PlayerTypeHudComponent player2TypeHud;
-
   late Player currentPlayer;
-  PlayerType player1Type = PlayerType.human;
-  PlayerType player2Type = PlayerType.human;
 
+  late PauseButtonSprite pauseButtonSprite;
   final ActionManager actionManager = ActionManager();
+  late GameConfig config;
 
   GameState? state;
 
@@ -78,6 +52,17 @@ class AwaleGame extends FlameGame with TapDetector {
     _setupScene();
     _updateGameState();
     _setPlayer1Turn();
+    _setupGame();
+  }
+
+  GameConfig get gameConfig => config;
+
+  set gameConfig(GameConfig cfg) {
+    config = cfg;
+  }
+
+  void unpauseGame() {
+    overlays.remove(kPauseOverlayId);
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -85,6 +70,9 @@ class AwaleGame extends FlameGame with TapDetector {
   void onTapDown(TapDownInfo info) {
     // ... On s'assure qu'aucune autre action n'est en cours
     if (!actionManager.isRunning()) {
+      if (pauseButtonSprite.containsPoint(info.eventPosition.global)) {
+        overlays.add(kPauseOverlayId);
+      }
       if (currentPlayer == Player.player1) {
         _handlePlayer1Turn(info);
       } else {
@@ -135,26 +123,6 @@ class AwaleGame extends FlameGame with TapDetector {
     int p2Gains = state!.p2points;
     gainsTextPainter.render(canvas, "$p1Gains", p1aabb.min);
     gainsTextPainter.render(canvas, "$p2Gains", p2aabb.min);
-  }
-
-  /// Initialise les HUDs associé aux types de joueurs
-  void _initPlayerTypeHuds() {
-    player1TypeHud = PlayerTypeHudComponent(
-        position: p1Circles[6].min,
-        lineHeight: 50,
-        text: _getPlayerTypeText(player1Type),
-        orientation: PlayerTypeHudOrientation.upward);
-
-    player2TypeHud = PlayerTypeHudComponent(
-        position: p2Circles[3].max,
-        lineHeight: 50,
-        text: _getPlayerTypeText(player2Type),
-        orientation: PlayerTypeHudOrientation.downward);
-
-    addAll([
-      player1TypeHud,
-      player2TypeHud,
-    ]);
   }
 
   /// Charge les AABBs associées aux cercles
@@ -214,45 +182,30 @@ class AwaleGame extends FlameGame with TapDetector {
           Vector2(p2Stump.width - 1 - 2 * stumpOffset,
               p2Stump.height - 1 - 2 * stumpOffset),
     );
-    _initTurnText();
+    turnPlateSprite = TurnPlateSprite(position: Vector2(size.x / 2, 0));
+    pauseButtonSprite = PauseButtonSprite(position: Vector2(0, 0));
+    pauseButtonSprite.x = size.x - pauseButtonSprite.width - 1;
+    pauseButtonSprite.y = 20;
     addAll([
       BackgroundSprite(size: Vector2(size.x, size.y)),
       PaddleSprite(position: Vector2(boardX, boardY)),
       p1Stump,
       p2Stump,
-      turnTextComponent,
+      pauseButtonSprite,
     ]);
     _initBeansPosition();
-    _initPlayerTypeHuds();
-  }
-
-  void _initTurnText() {
-    turnTextComponent = TextComponent(
-      anchor: Anchor.topCenter,
-      text: "A votre tour de jouer !",
-      textRenderer: TextPaint(
-        style: const TextStyle(
-          fontSize: 35,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          backgroundColor: Color.fromARGB(255, 116, 91, 53),
-        ),
-      ),
-    )
-      ..x = size.x / 2
-      ..y = 0;
   }
 
   /// Passe le tour au joueur joueur 1
   void _setPlayer1Turn() {
     currentPlayer = Player.player1;
-    turnTextComponent.y = 0;
+    turnPlateSprite.y = 0;
   }
 
   /// Passe le tour au joueur 2
   void _setPlayer2Turn() {
     currentPlayer = Player.player2;
-    turnTextComponent.y = size.y - turnTextComponent.height - 1;
+    turnPlateSprite.y = size.y - turnPlateSprite.height - 1;
   }
 
   void _switchPlayerTurn() {
@@ -378,12 +331,10 @@ class AwaleGame extends FlameGame with TapDetector {
     }
   }
 
-  String _getPlayerTypeText(PlayerType type) {
-    switch (type) {
-      case PlayerType.ai:
-        return "IA";
-      case PlayerType.human:
-        return "Humain";
-    }
+  void _setupGame() {
+    config = GameConfig(
+        player1: PlayerType.human,
+        player2: PlayerType.human,
+        aiLevel: AILevel.easy);
   }
 }

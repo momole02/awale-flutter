@@ -1,6 +1,6 @@
 import 'package:awale_flutter/game/gameplay/action_pattern.dart';
 import 'package:awale_flutter/game/gameplay/actions/gain_move_action.dart';
-import 'package:awale_flutter/game/gameplay/actions/symbols.dart';
+import 'package:awale_flutter/game/constants.dart';
 import 'package:awale_flutter/simulator/state/circular_matrix.dart';
 import 'package:awale_flutter/simulator/state/game_state.dart';
 import 'package:flame/components.dart';
