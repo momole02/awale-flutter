@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:awale_flutter/game/gameplay/action_pattern.dart';
 import 'package:awale_flutter/game/gameplay/actions/sprite_move_action.dart';
-import 'package:awale_flutter/game/gameplay/actions/symbols.dart';
+import 'package:awale_flutter/game/constants.dart';
 import 'package:flame/components.dart';
 
 /// Implémentation de l'action associé au jeu d'un joueur
