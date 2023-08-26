@@ -47,6 +47,7 @@ class AwaleGame extends FlameGame with TapDetector {
 
   @override
   FutureOr<void> onLoad() async {
+    await Future.delayed(const Duration(seconds: 1));
     // debugMode = true;
     boardX = size.x / 10 + 10;
     boardY = size.y / 4;
