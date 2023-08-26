@@ -16,7 +16,9 @@ import 'package:awale_flutter/game/sprites/pause_button_spr.dart';
 import 'package:awale_flutter/game/sprites/stump_spr.dart';
 import 'package:awale_flutter/game/sprites/turn_plate_spr.dart';
 import 'package:awale_flutter/game/types.dart';
+import 'package:awale_flutter/simulator/ai/alpha_beta.dart';
 import 'package:awale_flutter/simulator/state/game_state.dart';
+import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 
 import 'package:flame/game.dart';
@@ -63,6 +65,7 @@ class AwaleGame extends FlameGame with TapDetector {
 
   void unpauseGame() {
     overlays.remove(kPauseOverlayId);
+    _aiCheckPlay();
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -73,9 +76,11 @@ class AwaleGame extends FlameGame with TapDetector {
       if (pauseButtonSprite.containsPoint(info.eventPosition.global)) {
         overlays.add(kPauseOverlayId);
       }
-      if (currentPlayer == Player.player1) {
+      if (currentPlayer == Player.player1 &&
+          gameConfig.player1 == PlayerType.human) {
         _handlePlayer1Turn(info);
-      } else {
+      } else if (currentPlayer == Player.player2 &&
+          gameConfig.player2 == PlayerType.human) {
         _handlePlayer2Turn(info);
       }
     }
@@ -183,6 +188,8 @@ class AwaleGame extends FlameGame with TapDetector {
               p2Stump.height - 1 - 2 * stumpOffset),
     );
     turnPlateSprite = TurnPlateSprite(position: Vector2(size.x / 2, 0));
+    turnPlateSprite.anchor = Anchor.topCenter;
+    turnPlateSprite.scale = Vector2(0.7, 0.7);
     pauseButtonSprite = PauseButtonSprite(position: Vector2(0, 0));
     pauseButtonSprite.x = size.x - pauseButtonSprite.width - 1;
     pauseButtonSprite.y = 20;
@@ -192,6 +199,7 @@ class AwaleGame extends FlameGame with TapDetector {
       p1Stump,
       p2Stump,
       pauseButtonSprite,
+      turnPlateSprite,
     ]);
     _initBeansPosition();
   }
@@ -268,7 +276,47 @@ class AwaleGame extends FlameGame with TapDetector {
         .push(
           // Change le tour
           CustomCallbackAction(callback: (globals) => _switchPlayerTurn()),
+        )
+        .push(
+          // L'AI check si c'est son tour de jouer
+          CustomCallbackAction(callback: (globals) => _aiCheckPlay()),
         );
+  }
+
+  int _getAiDepth(AILevel level) {
+    final levelDepth = {
+      AILevel.easy: 3,
+      AILevel.medium: 5,
+      AILevel.hard: 10,
+    };
+    return levelDepth[level]!;
+  }
+
+  Future<void> _aiCheckPlay() async {
+    _updateGameState();
+    if (currentPlayer == Player.player1 &&
+        gameConfig.player1 == PlayerType.ai) {
+      AlphaBetaContext aiContext = AlphaBetaContext(
+        currentState: state!,
+        mainPlayer: GamePlayer.p1,
+        maxDepth: _getAiDepth(gameConfig.aiLevel),
+      );
+      int move = aiContext.guessBestMove();
+      assert(state!.p1pad[move] > 0);
+      _play(p1Circles[move]);
+    } else if (currentPlayer == Player.player2 &&
+        gameConfig.player2 == PlayerType.ai) {
+      AlphaBetaContext aiContext = AlphaBetaContext(
+          currentState: state!,
+          mainPlayer: GamePlayer.p2,
+          maxDepth: _getAiDepth(gameConfig.aiLevel));
+      int move = aiContext.guessBestMove();
+      // assert(state!.p2pad[move] > 0);
+      if (state!.p2pad[move] == 0) {
+        move = aiContext.guessBestMove();
+      }
+      _play(p2Circles[move]);
+    }
   }
 
   /// Initialise les positions des graines

@@ -9,19 +9,18 @@ class AlphaBetaContext {
   GameState currentState;
   GamePlayer mainPlayer;
   int maxDepth;
-  bool randomize;
 
   AlphaBetaContext({
     required this.currentState,
     required this.mainPlayer,
     required this.maxDepth,
-    this.randomize = false,
   });
 
   /// Retourne le meilleur mouvement à réaliser
   int guessBestMove() {
     final [move, _] =
         _min(currentState, 0, -__infinty, __infinty, __invalidMove);
+
     return move;
   }
 
@@ -44,12 +43,12 @@ class AlphaBetaContext {
     }
     for (int move in availableMoves) {
       GameState simulated = state.simulate(mainPlayer, move);
-      final [moveId, moveValue] = _max(simulated, depth + 1, alpha, beta, move);
+      final [_, moveValue] = _max(simulated, depth + 1, alpha, beta, move);
       if (moveValue < bestMoveValue) {
         bestMoveValue = moveValue;
-        bestMoveId = moveId;
+        bestMoveId = move;
       }
-      beta = min(alpha, bestMoveValue);
+      beta = min(beta, bestMoveValue);
       if (beta <= alpha) {
         // hack: alpha beta pruning
         break;
@@ -75,10 +74,10 @@ class AlphaBetaContext {
 
     for (int move in availableMoves) {
       GameState simulated = state.simulate(oppositePlayer, move);
-      final [moveId, moveValue] = _min(simulated, depth + 2, alpha, beta, move);
+      final [_, moveValue] = _min(simulated, depth + 1, alpha, beta, move);
       if (moveValue > bestMoveValue) {
         bestMoveValue = moveValue;
-        bestMoveId = moveId;
+        bestMoveId = move;
       }
       alpha = max(alpha, bestMoveValue);
       if (beta <= alpha) {
@@ -93,9 +92,6 @@ class AlphaBetaContext {
   /// aléatoirement ou non
   List<int> getAvailableMoves(GameState state, GamePlayer player) {
     List<int> moves = state.getAvailableMoves(player);
-    if (randomize) {
-      moves.shuffle();
-    }
     return moves;
   }
 }

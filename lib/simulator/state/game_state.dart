@@ -145,9 +145,14 @@ class GameState {
   /// Evalue t'état du jeu par rapport au joueur [mainPlayer]
   /// et retourne un resultat par rapport à l'opposant
   int evaluate([GamePlayer mainPlayer = GamePlayer.p1]) {
-    return mainPlayer == GamePlayer.p1
-        ? p2points - p1points
-        : p1points - p2points;
+    int v1 = p1pad.where((p) => p == 1 || p == 2).length;
+    int v2 = p2pad.where((p) => p == 1 || p == 2).length;
+    switch (mainPlayer) {
+      case GamePlayer.p1:
+        return (2 * p2points + v1) - (2 * p1points + v2);
+      case GamePlayer.p2:
+        return (2 * p1points + v2) - (2 * p2points + v1);
+    }
   }
 
   /// Retourne les mouvements possibles pour le joueur [player]
