@@ -65,8 +65,17 @@ class AwaleGame extends FlameGame with TapDetector {
   }
 
   void unpauseGame() {
-    overlays.remove(kPauseOverlayId);
+    overlays.clear();
     _aiCheckPlay();
+  }
+
+  /// Recommence le jeu
+  void restartGame() {
+    overlays.clear();
+    for (int i = 0; i < beans.length; ++i) {
+      beans[i].position = _beanPosition(i);
+    }
+    _updateGameState();
   }
 
   /// Lorsque l'utilisateur tappe sur l'écran
@@ -275,6 +284,10 @@ class AwaleGame extends FlameGame with TapDetector {
           CustomCallbackAction(callback: (globals) => _updateGameState()),
         )
         .push(
+          // Recalcul l'état du jeu
+          CustomCallbackAction(callback: (globals) => _checkEndOfGame()),
+        )
+        .push(
           // Change le tour
           CustomCallbackAction(callback: (globals) => _switchPlayerTurn()),
         )
@@ -295,28 +308,30 @@ class AwaleGame extends FlameGame with TapDetector {
 
   Future<void> _aiCheckPlay() async {
     _updateGameState();
-    if (currentPlayer == Player.player1 &&
-        gameConfig.player1 == PlayerType.ai) {
-      AlphaBetaContext aiContext = AlphaBetaContext(
-        currentState: state!,
-        mainPlayer: GamePlayer.p1,
-        maxDepth: _getAiDepth(gameConfig.aiLevel),
-      );
-      int move = aiContext.guessBestMove();
-      assert(state!.p1pad[move] > 0);
-      _play(p1Circles[move]);
-    } else if (currentPlayer == Player.player2 &&
-        gameConfig.player2 == PlayerType.ai) {
-      AlphaBetaContext aiContext = AlphaBetaContext(
+    if (null == state!.hasWinner()) {
+      if (currentPlayer == Player.player1 &&
+          gameConfig.player1 == PlayerType.ai) {
+        AlphaBetaContext aiContext = AlphaBetaContext(
           currentState: state!,
-          mainPlayer: GamePlayer.p2,
-          maxDepth: _getAiDepth(gameConfig.aiLevel));
-      int move = aiContext.guessBestMove();
-      // assert(state!.p2pad[move] > 0);
-      if (state!.p2pad[move] == 0) {
-        move = aiContext.guessBestMove();
+          mainPlayer: GamePlayer.p1,
+          maxDepth: _getAiDepth(gameConfig.aiLevel),
+        );
+        int move = aiContext.guessBestMove();
+        assert(state!.p1pad[move] > 0);
+        _play(p1Circles[move]);
+      } else if (currentPlayer == Player.player2 &&
+          gameConfig.player2 == PlayerType.ai) {
+        AlphaBetaContext aiContext = AlphaBetaContext(
+            currentState: state!,
+            mainPlayer: GamePlayer.p2,
+            maxDepth: _getAiDepth(gameConfig.aiLevel));
+        int move = aiContext.guessBestMove();
+        // assert(state!.p2pad[move] > 0);
+        if (state!.p2pad[move] == 0) {
+          move = aiContext.guessBestMove();
+        }
+        _play(p2Circles[move]);
       }
-      _play(p2Circles[move]);
     }
   }
 
@@ -385,5 +400,11 @@ class AwaleGame extends FlameGame with TapDetector {
         player1: PlayerType.human,
         player2: PlayerType.human,
         aiLevel: AILevel.easy);
+  }
+
+  void _checkEndOfGame() {
+    if (state!.hasWinner() != null) {
+      overlays.add(kGameOverOverlayId);
+    }
   }
 }
