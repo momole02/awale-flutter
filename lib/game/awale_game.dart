@@ -238,7 +238,7 @@ class AwaleGame extends FlameGame with TapDetector {
   void _handlePlayer1Turn(TapDownInfo info) {
     int index = p1Circles.indexWhere(
         (circle) => circle.containsVector2(info.eventPosition.global));
-    if (-1 != index) {
+    if (-1 != index && state!.p1pad[index] > 0) {
       _play(p1Circles[index]);
     }
   }
@@ -247,7 +247,7 @@ class AwaleGame extends FlameGame with TapDetector {
   void _handlePlayer2Turn(TapDownInfo info) {
     int index = p2Circles.indexWhere(
         (circle) => circle.containsVector2(info.eventPosition.global));
-    if (-1 != index) {
+    if (-1 != index && state!.p2pad[index] > 0) {
       _play(p2Circles[index]);
     }
   }
