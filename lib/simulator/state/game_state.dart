@@ -168,6 +168,17 @@ class GameState {
     }
   }
 
+  /// Retourne le joueur gagnant
+  GamePlayer? hasWinner() {
+    int half = ((p1pad.length * 8) / 2).floor();
+    if (p1points > half) {
+      return GamePlayer.p1;
+    } else if (p2points > half) {
+      return GamePlayer.p2;
+    }
+    return null;
+  }
+
   /// Retourne vrai si le jeu est équilibré
   // bool isBalanced() {
   //   const expectedTotal = 2 * 8 * 8;

@@ -9,3 +9,4 @@ flutter run
 ```
 
 ![Snapshot](docs/images/snapshot.png)
+![Snapshot](docs/images/snapshot1.png)
